@@ -200,14 +200,23 @@ final class CPUReader {
 
 // MARK: - Rendering (Stats-style: small label on top, value below; identical to AIUsageBar)
 
+let labelAttrs: [NSAttributedString.Key: Any] = [
+    .font: NSFont.systemFont(ofSize: 7, weight: .regular), .foregroundColor: NSColor.black]
+let valueAttrs: [NSAttributedString.Key: Any] = [
+    .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium), .foregroundColor: NSColor.black]
+
+/// Fixed tile width: widest possible label and value, so the tile never moves in the menu bar.
+let tileWidth: CGFloat = {
+    let labels = (0...4).compactMap { Pressure(rawValue: $0)?.label }
+    let lw = labels.map { NSAttributedString(string: $0, attributes: labelAttrs).size().width }.max() ?? 0
+    let vw = ["100%", "?", "–"].map { NSAttributedString(string: $0, attributes: valueAttrs).size().width }.max() ?? 0
+    return ceil(max(lw, vw))
+}()
+
 func renderSegment(label: String, value: String) -> NSImage {
-    let labelAttrs: [NSAttributedString.Key: Any] = [
-        .font: NSFont.systemFont(ofSize: 7, weight: .regular), .foregroundColor: NSColor.black]
-    let valueAttrs: [NSAttributedString.Key: Any] = [
-        .font: NSFont.monospacedDigitSystemFont(ofSize: 12, weight: .medium), .foregroundColor: NSColor.black]
     let l = NSAttributedString(string: label, attributes: labelAttrs)
     let v = NSAttributedString(string: value, attributes: valueAttrs)
-    let width = ceil(max(l.size().width, v.size().width))
+    let width = tileWidth
     let img = NSImage(size: NSSize(width: width, height: 22), flipped: false) { _ in
         l.draw(at: NSPoint(x: 0, y: 12.5))
         v.draw(at: NSPoint(x: 0, y: -0.5))
